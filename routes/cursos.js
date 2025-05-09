@@ -13,6 +13,38 @@ cursos.get("/", async (req, res) => {
     }
 });
 
+function fitnessFunctionPerformance(n) {
+    if (n <= 2) return "Excelente";
+    if (n <= 100) return "OK";
+    if (n >= 600) return "Bad";
+    return "Regular";
+}
+
+cursos.post("/busqueda", async (req, res) => {
+    const { nombre, descripcion, fecha_inicio, fecha_fin, docente_id } = req.body;
+    try {
+        const start = Date.now(); // Inicio de medición
+
+        let query = "SELECT * FROM Cursos WHERE 1=1";
+        const params = [];
+
+        if (nombre) query += " AND nombre LIKE ?", params.push(`%${nombre}%`);
+        if (descripcion) query += " AND descripcion LIKE ?", params.push(`%${descripcion}%`);
+        if (fecha_inicio) query += " AND fecha_inicio >= ?", params.push(fecha_inicio);
+        if (fecha_fin) query += " AND fecha_fin <= ?", params.push(fecha_fin);
+        if (docente_id) query += " AND docente_id = ?", params.push(docente_id);
+
+        const [results] = await connection.query(query, params);
+        const elapsed = Date.now() - start; // Tiempo total en ms
+        const fitness = fitnessFunctionPerformance(elapsed);
+
+        res.status(200).json({ results, elapsed, fitness });
+    } catch (error) {
+        res.status(500).json({ message: "Error en el servidor" });
+    }
+});
+
+
 cursos.post("/", async (req, res) => {
     const { nombre, descripcion, fecha_inicio, fecha_fin, docente_id } = req.body;
     try {
