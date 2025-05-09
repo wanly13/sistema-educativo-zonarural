@@ -3,18 +3,16 @@ const clientes = express.Router()
 const connection = require("../config/db");
 const { encriptar } = require("../auth/bcrypt")
 
-//OBTENER CLIENTES
 clientes.get("/", async (req, res) => {
     try {
         const [results] = await connection.query("SELECT * FROM Profesores");
         res.status(200).json(results);
     } catch (error) {
-        console.error("Error al obtener clientes:", error);
+        console.error("Error al obtener Profesores:", error);
         res.status(500).json({ message: "Error en el servidor" });
     }
 });
 
-//LOGUEO CLIENTE
 clientes.post("/login", async (req, res) => {
     const { usuario } = req.body;
     try {
@@ -30,7 +28,6 @@ clientes.post("/login", async (req, res) => {
     }
 });
 
-//REGISTRO CLIENTE
 clientes.post("/register", async (req, res) => {
     const { nombre, usuario, clave, email } = req.body;
     try {
@@ -46,16 +43,15 @@ clientes.post("/register", async (req, res) => {
     }
 });
 
-//ELIMINAR CLIENTE
 clientes.delete("/:id", async (req, res) => {
     const { id } = req.params;
     try {
         const [clientes] = await connection.query("SELECT * FROM Profesores");
-        const user = clientes.filter(user => id == user.id_cliente);
+        const user = clientes.filter(user => id == user.id);
         if (user.length === 0)
             res.status(401).json({ message: "ID no registrado" })
         else{
-            const [result] = await connection.query("DELETE FROM Profesores WHERE id_cliente = ?", [user[0].id_cliente]);
+            const [result] = await connection.query("DELETE FROM Profesores WHERE id = ?", [user[0].id]);
             if (result.affectedRows === 0) 
                 return res.status(404).json({ message: "Cliente no encontrado" });
             res.status(200).json({ message: "Cliente eliminado correctamente" });
