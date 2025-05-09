@@ -1,9 +1,17 @@
 const express = require("express")
-const clientes = express.Router()
+const profesores = express.Router()
 const connection = require("../config/db");
 const { encriptar } = require("../auth/bcrypt")
 
-clientes.get("/", async (req, res) => {
+
+function getFitnessSecurity(n) {
+    if (n === 1) return "Excelente";
+    if (n === 2) return "Bueno";
+    return "Malo";
+}
+
+
+profesores.get("/", async (req, res) => {
     try {
         const [results] = await connection.query("SELECT * FROM Profesores");
         res.status(200).json(results);
@@ -12,23 +20,46 @@ clientes.get("/", async (req, res) => {
         res.status(500).json({ message: "Error en el servidor" });
     }
 });
+// Security - Fitnes Function 
+profesores.post("/login", async (req, res) => {
+    const { usuario, clave } = req.body;
 
-clientes.post("/login", async (req, res) => {
-    const { usuario } = req.body;
     try {
-        const [clientes] = await connection.query("SELECT * FROM Profesores");
-        const validation = clientes.filter(user => user.usuario === usuario);
-        if (validation.length === 0)
-            res.status(401).json({ message: "Usuario no registrado" })
-        else
-            res.status(200).json({ message: "Login correcto" });
+        const [results] = await connection.query("SELECT * FROM Profesores WHERE usuario = ?", [usuario]);
+
+        if (results.length === 0) {
+            return res.status(401).json({ message: "Usuario no registrado" });
+        }
+
+        const user = results[0];
+        const clave_correcta = await bcrypt.compare(clave, user.clave);
+        if (clave_correcta) {
+            const nuevosIntentos = user.cantidad_logeos + 1;
+            await connection.query("UPDATE Profesores SET cantidad_logeos = ? WHERE id = ?", [nuevosIntentos, user.id]);
+
+            return res.status(401).json({
+                message: "Clave incorrecta",
+                attempts: nuevosIntentos,
+                fitness: getFitnessSecurity(nuevosIntentos)
+            });
+        }
+
+        await connection.query("UPDATE Profesores SET cantidad_logeos = 0 WHERE id = ?", [user.id]);
+
+        return res.status(200).json({
+            message: "Login correcto",
+            attempts: user.cantidad_logeos + 1,
+            fitness: getFitnessSecurity(user.cantidad_logeos + 1)
+        });
+
     } catch (error) {
         console.error("Error en login:", error);
         res.status(500).json({ message: "Error en el servidor" });
     }
 });
 
-clientes.post("/register", async (req, res) => {
+
+profesores.post("/register", async (req, res) => {
     const { nombre, usuario, clave, email } = req.body;
     try {
         const hash_clave = encriptar(clave);
@@ -43,16 +74,16 @@ clientes.post("/register", async (req, res) => {
     }
 });
 
-clientes.delete("/:id", async (req, res) => {
+profesores.delete("/:id", async (req, res) => {
     const { id } = req.params;
     try {
-        const [clientes] = await connection.query("SELECT * FROM Profesores");
-        const user = clientes.filter(user => id == user.id);
+        const [profesores] = await connection.query("SELECT * FROM Profesores");
+        const user = profesores.filter(user => id == user.id);
         if (user.length === 0)
             res.status(401).json({ message: "ID no registrado" })
-        else{
+        else {
             const [result] = await connection.query("DELETE FROM Profesores WHERE id = ?", [user[0].id]);
-            if (result.affectedRows === 0) 
+            if (result.affectedRows === 0)
                 return res.status(404).json({ message: "Cliente no encontrado" });
             res.status(200).json({ message: "Cliente eliminado correctamente" });
         }
@@ -62,4 +93,4 @@ clientes.delete("/:id", async (req, res) => {
     }
 });
 
-module.exports = clientes;
+module.exports = profesores;

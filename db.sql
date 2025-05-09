@@ -5,6 +5,7 @@ CREATE TABLE Profesores (
     id INT PRIMARY KEY AUTO_INCREMENT,
     nombre VARCHAR(100) NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE,
+    cantidad_logeos INT DEFAULT 0,
     usuario VARCHAR(100) NOT NULL UNIQUE,
     clave VARCHAR(100) NOT NULL
 );
@@ -13,6 +14,7 @@ CREATE TABLE Alumnos (
     id INT PRIMARY KEY AUTO_INCREMENT,
     nombre VARCHAR(100) NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE,
+    cantidad_logeos INT DEFAULT 0,
     usuario VARCHAR(100) NOT NULL UNIQUE,
     clave VARCHAR(100) NOT NULL
 );
